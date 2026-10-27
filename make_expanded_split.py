@@ -60,7 +60,8 @@ for i, group in enumerate(groups):
         val_count += len(group)
 
 train_ids = set(parent) - val_ids
-
+print("Total source IDs:", len(parent))
+print("Connected groups:", len(groups))
 print("Train source IDs:", sorted(train_ids))
 print("Validation source IDs:", sorted(val_ids))
 
