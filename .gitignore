@@ -6,3 +6,26 @@ test_ckpt/
 data/images/
 data/videos/
 *.pyc
+# Local Python environment
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.DS_Store
+
+# Dataset and generated data
+data/benchmark/
+data/expanded_images/
+data/expanded_split/
+data/ffpp/
+data/frames/
+data/split/
+data/sample_preview.jpg
+
+# Generated analysis outputs
+fft_band_comparison.csv
+frequency_comparison.csv
+fft_test.png
+
+# Local environment variables
+.env

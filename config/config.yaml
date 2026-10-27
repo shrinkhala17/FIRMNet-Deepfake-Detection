@@ -5,7 +5,7 @@
 # Main parameters
 pretrained: null
 epochs: 15
-device: cuda
+device: mps
 
 # Logging & Dataset (from transform.yaml)
 log_dir: logs

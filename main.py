@@ -110,7 +110,7 @@ def setup_training(model, train_loader, val_loader, device, args, num_epochs=20)
         device=device,
         metric_add=args.metrics,
         checkpoint_callback=checkpoint_callback,
-        use_amp=getattr(args, "use_amp", True),
+        use_amp=False,
         use_scheduler=True,
         scheduler_config=scheduler_config,
         logger=logger
@@ -128,7 +128,7 @@ if __name__ == "__main__":
                         help="Path to pretrained weights (optional)")
     parser.add_argument("--epochs", type=int, default=None,
                         help="Number of training epochs (override config)")
-    parser.add_argument("--device", type=str, choices=["cuda", "cpu"], default="cuda",
+    parser.add_argument("--device", type=str, choices=["cuda", "cpu", "mps"], default="mps",
                         help="Device to train on")
 
     # Shortcuts
@@ -183,7 +183,12 @@ if __name__ == "__main__":
     else:
         logger.info("Using manually provided command-line arguments:")
 
-    device = torch.device(args.device if torch.cuda.is_available() else "cpu")
+    if args.device == "mps" and torch.backends.mps.is_available():
+        device = torch.device("mps")
+    elif args.device == "cuda" and torch.cuda.is_available():
+        device = torch.device("cuda")
+    else:
+        device = torch.device("cpu")
     train_loader, val_loader = load_data(args)
 
     # Optional override
