@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}FIRMNet AI — Detect Deepfakes. Trust What You See.{% endblock %}
+{% block description %}Robust deepfake detection using deep learning and frequency-domain analysis. Upload an image and get instant AI-powered authenticity analysis.{% endblock %}
+
+{% block content %}
+
+<!-- ─── Hero ───────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-eyebrow">🛡️ AI-Powered Image Forensics</div>
+    <h1>
+      Detect Deepfakes.<br>
+      <span class="gradient-text">Trust What You See.</span>
+    </h1>
+    <p class="hero-desc">
+      Identify manipulated images using advanced deep learning and
+      frequency-domain analysis.  Our system combines spatial feature
+      extraction with FFT-based spectral analysis to detect subtle
+      signs of image forgery.
+    </p>
+    <div class="hero-actions">
+      <a href="{{ url_for('signup') }}" class="btn btn-primary">Get Started</a>
+      <a href="{{ url_for('login') }}" class="btn btn-outline">Login</a>
+    </div>
+  </div>
+</section>
+
+<!-- ─── About the Project ─────────────────────────────────── -->
+<section class="section section-dark">
+  <div class="container">
+    <div class="section-header">
+      <h2>About the Project</h2>
+      <p>
+        FIRMNet combines two complementary approaches to expose deepfakes
+        that fool human observers and conventional classifiers.
+      </p>
+    </div>
+
+    <div class="about-grid">
+      <div class="about-text">
+        <h3>Spatial Feature Extraction</h3>
+        <p>
+          Our EfficientNetV2-S backbone extracts rich spatial features
+          from the image — capturing textures, edges, and structural
+          patterns that distinguish real faces from AI-generated ones.
+        </p>
+        <h3 style="margin-top:28px">FFT-Based Frequency Analysis</h3>
+        <p>
+          The Frequency Attention Gate (FAGate) and Frequency Enhanced
+          Residual (FER) modules operate in the Fourier-transform domain.
+          Deepfakes often leave subtle spectral fingerprints — unusual
+          energy distributions across low, mid, and high frequency bands
+          — that are invisible in pixel space but clear in the spectrum.
+        </p>
+      </div>
+
+      <div class="about-visual">
+        <div class="diagram-flow">
+          <div class="diagram-block">📷 Input Image</div>
+          <div class="diagram-arrow">↓</div>
+          <div class="diagram-block">🧠 EfficientNetV2-S Backbone</div>
+          <div class="diagram-arrow">↓</div>
+          <div class="diagram-block purple-block">⚡ FAGate — Frequency Attention</div>
+          <div class="diagram-arrow">↓</div>
+          <div class="diagram-block purple-block">🔄 FER — Frequency Enhanced Residual</div>
+          <div class="diagram-arrow">↓</div>
+          <div class="diagram-block">✅ REAL / FAKE Classification</div>
+        </div>
+        <div class="diagram-label">FIRMNet Architecture</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── How It Works ──────────────────────────────────────── -->
+<section class="section section-darker">
+  <div class="container">
+    <div class="section-header">
+      <h2>How It Works</h2>
+      <p>
+        Four simple steps from upload to detection result.
+      </p>
+    </div>
+
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-number">1</div>
+        <h3>Upload Image</h3>
+        <p>Select or drag-and-drop any face image in JPG, PNG, or WebP format.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-number">2</div>
+        <h3>AI Analysis</h3>
+        <p>The FIRMNet model processes the image through spatial and frequency pathways.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-number">3</div>
+        <h3>Spectral Analysis</h3>
+        <p>A 2D FFT reveals energy distribution across low, mid, and high frequency bands.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-number">4</div>
+        <h3>Detection Result</h3>
+        <p>Get a REAL or FAKE classification with model confidence and FFT visualization.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Features ──────────────────────────────────────────── -->
+<section class="section section-dark">
+  <div class="container">
+    <div class="section-header">
+      <h2>Key Features</h2>
+      <p>
+        A comprehensive deepfake detection toolkit built for research
+        and public-safety awareness.
+      </p>
+    </div>
+
+    <div class="grid-4">
+      <div class="card">
+        <div class="card-icon cyan">🔍</div>
+        <h3>Deepfake Detection</h3>
+        <p>
+          Classify images as REAL or FAKE using a deep neural network
+          trained on forensic datasets.
+        </p>
+      </div>
+      <div class="card">
+        <div class="card-icon purple">📊</div>
+        <h3>FFT Visualization</h3>
+        <p>
+          View the 2D Fourier-transform spectrum to see how image
+          energy is distributed across spatial frequencies.
+        </p>
+      </div>
+      <div class="card">
+        <div class="card-icon success">📈</div>
+        <h3>Confidence Scores</h3>
+        <p>
+          See model softmax scores for both classes along with the
+          confidence level of the prediction.
+        </p>
+      </div>
+      <div class="card">
+        <div class="card-icon warning">🕘</div>
+        <h3>Analysis History</h3>
+        <p>
+          Every analysis is saved to your personal dashboard so you
+          can review and compare past results.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

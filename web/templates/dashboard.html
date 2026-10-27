@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — FIRMNet AI{% endblock %}
+
+{% block content %}
+<div class="dashboard-page">
+  <div class="container">
+
+    <!-- ─── Welcome ─────────────────────────────────────── -->
+    <div class="dash-welcome">
+      <h1>Welcome, {{ user.full_name }}!</h1>
+      <p>Your deepfake detection dashboard</p>
+    </div>
+
+    <!-- ─── Stats ───────────────────────────────────────── -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Analyses</div>
+        <div class="stat-value cyan">{{ stats.total }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Detected as FAKE</div>
+        <div class="stat-value danger">{{ stats.fake }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Detected as REAL</div>
+        <div class="stat-value success">{{ stats.real }}</div>
+      </div>
+    </div>
+
+    <!-- ─── New Analysis ────────────────────────────────── -->
+    <div class="dash-section">
+      <div class="dash-section-header">
+        <h2>New Analysis</h2>
+      </div>
+
+      {% if not model_available %}
+        <div class="card" style="text-align:center;padding:48px 24px">
+          <div style="font-size:2.5rem;margin-bottom:16px">⚠️</div>
+          <h3 style="margin-bottom:8px">No Model Checkpoint Available</h3>
+          <p style="color:var(--text-secondary);max-width:480px;margin:0 auto">
+            Train a model first with <code>python main.py</code> or
+            <code>python train_mobilenet.py</code> and place the
+            checkpoint in the <code>checkpoints/</code> directory.
+          </p>
+        </div>
+      {% else %}
+        <form id="analyzeForm" method="POST" action="{{ url_for('analyze') }}" enctype="multipart/form-data">
+          <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📁</div>
+            <h3>Drop an image here or click to browse</h3>
+            <p>Supports JPG, PNG, and WebP &middot; Max 16 MB</p>
+            <input type="file" id="imageInput" name="image"
+                   accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+          </div>
+
+          <div class="upload-preview" id="uploadPreview">
+            <img id="previewImage" src="" alt="Preview">
+            <div class="filename" id="fileName"></div>
+            <button type="submit" id="analyzeBtn" class="btn btn-primary" disabled>
+              🔍 Run Analysis
+            </button>
+          </div>
+        </form>
+
+        {% if model_type %}
+          <p style="margin-top:12px;font-size:0.82rem;color:var(--text-muted)">
+            Active model: {{ 'FIRMNet (EfficientNetV2-S + FAGate + FER)' if model_type == 'firmnet' else 'MobileNetV3-Small' }}
+          </p>
+        {% endif %}
+      {% endif %}
+    </div>
+
+    <!-- ─── Analysis History ────────────────────────────── -->
+    <div class="dash-section">
+      <div class="dash-section-header">
+        <h2>Analysis History</h2>
+      </div>
+
+      {% if analyses %}
+        <div class="table-wrapper">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Image</th>
+                <th>Result</th>
+                <th>Confidence</th>
+                <th>Date &amp; Time</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for a in analyses %}
+              <tr>
+                <td>
+                  <span style="font-size:0.85rem;color:var(--text-secondary)"
+                        title="{{ a.original_filename }}">
+                    {{ a.original_filename[:30] }}{{ '…' if a.original_filename|length > 30 }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge {{ 'badge-fake' if a.predicted_class == 'FAKE' else 'badge-real' }}">
+                    {{ a.predicted_class }}
+                  </span>
+                </td>
+                <td>
+                  <div class="confidence-bar">
+                    <div class="confidence-track">
+                      <div class="confidence-fill {{ 'danger' if a.predicted_class == 'FAKE' else 'success' }}"
+                           style="width:{{ (a.confidence * 100)|round(1) }}%"></div>
+                    </div>
+                    <span class="confidence-value">{{ (a.confidence * 100)|round(1) }}%</span>
+                  </div>
+                </td>
+                <td style="font-size:0.83rem;color:var(--text-secondary)">
+                  {{ a.created_at }}
+                </td>
+                <td>
+                  <a href="{{ url_for('result', analysis_id=a.id) }}" class="btn btn-outline btn-sm">
+                    View
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="card">
+          <div class="empty-state">
+            <div class="empty-icon">🔬</div>
+            <h3>No analyses yet</h3>
+            <p>Upload an image above to run your first deepfake detection analysis.</p>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

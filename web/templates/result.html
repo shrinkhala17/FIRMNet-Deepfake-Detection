@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Analysis Result — FIRMNet AI{% endblock %}
+
+{% block content %}
+<div class="result-page">
+  <div class="container">
+
+    <!-- ─── Header ──────────────────────────────────────── -->
+    <div class="result-header">
+      <h1>Analysis Result</h1>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline btn-sm">← Back to Dashboard</a>
+        <a href="{{ url_for('dashboard') }}#analyzeForm" class="btn btn-primary btn-sm">New Analysis</a>
+      </div>
+    </div>
+
+    <!-- ─── Prediction + Image ──────────────────────────── -->
+    <div class="result-grid">
+
+      <!-- Prediction Card -->
+      <div class="result-card">
+        <h3>Classification Result</h3>
+        <div class="result-prediction">
+          <div class="result-verdict {{ 'fake' if analysis.predicted_class == 'FAKE' else 'real' }}">
+            {{ analysis.predicted_class }}
+          </div>
+          <div class="result-confidence">
+            Model confidence: <strong>{{ (analysis.confidence * 100)|round(1) }}%</strong>
+          </div>
+
+          <div class="score-bars">
+            <div class="score-row">
+              <span class="score-label">FAKE</span>
+              <div class="score-track">
+                <div class="score-fill danger"
+                     style="width:{{ (analysis.fake_score * 100)|round(1) }}%"></div>
+              </div>
+              <span class="score-value" style="color:var(--danger)">
+                {{ (analysis.fake_score * 100)|round(1) }}%
+              </span>
+            </div>
+            <div class="score-row">
+              <span class="score-label">REAL</span>
+              <div class="score-track">
+                <div class="score-fill success"
+                     style="width:{{ (analysis.real_score * 100)|round(1) }}%"></div>
+              </div>
+              <span class="score-value" style="color:var(--success)">
+                {{ (analysis.real_score * 100)|round(1) }}%
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Uploaded Image Card -->
+      <div class="result-card">
+        <h3>Uploaded Image</h3>
+        <div class="result-image">
+          <img src="{{ url_for('uploaded_file', filename=analysis.image_filename) }}"
+               alt="{{ analysis.original_filename }}">
+        </div>
+        <div class="result-meta" style="margin-top:20px">
+          <div class="meta-row">
+            <span class="meta-label">Filename</span>
+            <span class="meta-value">{{ analysis.original_filename }}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">Analyzed</span>
+            <span class="meta-value">{{ analysis.created_at }}</span>
+          </div>
+          {% if analysis.model_type %}
+          <div class="meta-row">
+            <span class="meta-label">Model</span>
+            <span class="meta-value">
+              {{ 'FIRMNet' if analysis.model_type == 'firmnet' else 'MobileNetV3-Small' }}
+            </span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── CNN Spatial Feature Analysis (Grad-CAM) ──────── -->
+    {% if analysis.gradcam_image_path %}
+    <div class="result-grid" style="grid-template-columns:1fr">
+      <div class="result-card">
+        <h3>🧠 CNN Spatial Feature Analysis</h3>
+        <p style="font-size:0.88rem;color:var(--text-secondary);line-height:1.6;margin-bottom:16px">
+          Grad-CAM visualization showing which image regions the CNN
+          focused on when making its {{ analysis.predicted_class }}
+          prediction. Warmer colours (red/yellow) indicate higher
+          attention; cooler colours (blue/green) indicate lower attention.
+        </p>
+        <div class="gradcam-image" style="text-align:center">
+          <img src="{{ url_for('gradcam_file', filename=analysis.gradcam_image_path) }}"
+               alt="Grad-CAM Spatial Feature Analysis"
+               style="max-width:100%;border-radius:8px;border:1px solid rgba(255,255,255,0.06)">
+        </div>
+        <div style="margin-top:20px;padding:16px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid rgba(255,255,255,0.06)">
+          <p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.7;margin-bottom:10px">
+            <strong style="color:var(--text-primary)">What this shows:</strong>
+            The heatmap highlights which parts of the image activated
+            the model's last convolutional layer most strongly for the
+            predicted class. These are the regions that influenced the
+            classification decision.
+          </p>
+          <p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.7;margin-bottom:10px">
+            <strong style="color:var(--text-primary)">Key facial regions:</strong>
+            The model typically focuses on areas around the eyes,
+            nose bridge, jawline, and skin texture — regions where
+            deepfake generation methods often produce subtle artefacts.
+          </p>
+          <p style="font-size:0.82rem;color:var(--warning);line-height:1.7;margin:0">
+            ⚠ These are learned CNN activations, not definitive forensic
+            evidence. A highlighted region does not prove manipulation —
+            it only shows where the model directed its attention.
+          </p>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ─── FFT Analysis ────────────────────────────────── -->
+    {% if analysis.fft_image_path %}
+    <div class="result-grid">
+      <!-- FFT Spectrum -->
+      <div class="result-card fft-section">
+        <h3>FFT Frequency Spectrum</h3>
+        <div class="fft-image">
+          <img src="{{ url_for('fft_file', filename=analysis.fft_image_path) }}"
+               alt="FFT Frequency Spectrum">
+        </div>
+        <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:12px;line-height:1.6">
+          The FFT spectrum shows how image energy is distributed across
+          spatial frequencies. The centre represents lower frequencies
+          (smooth regions); areas farther from the centre represent
+          higher frequencies (edges, textures, noise).
+        </p>
+      </div>
+
+      <!-- Frequency Energy Ratios -->
+      <div class="result-card">
+        <h3>Frequency Energy Distribution</h3>
+        <div class="freq-stats">
+          <div class="freq-stat">
+            <div class="freq-stat-label">Low Frequency</div>
+            <div class="freq-stat-value low">
+              {{ (analysis.freq_low * 100)|round(2) }}%
+            </div>
+          </div>
+          <div class="freq-stat">
+            <div class="freq-stat-label">Mid Frequency</div>
+            <div class="freq-stat-value mid">
+              {{ (analysis.freq_mid * 100)|round(2) }}%
+            </div>
+          </div>
+          <div class="freq-stat">
+            <div class="freq-stat-label">High Frequency</div>
+            <div class="freq-stat-value high">
+              {{ (analysis.freq_high * 100)|round(2) }}%
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:28px">
+          <p style="font-size:0.88rem;color:var(--text-secondary);line-height:1.7;margin-bottom:12px">
+            <strong style="color:var(--text-primary)">Low-frequency energy</strong>
+            captures smooth, uniform regions of the image — the coarse
+            structure and overall colour distribution.
+          </p>
+          <p style="font-size:0.88rem;color:var(--text-secondary);line-height:1.7;margin-bottom:12px">
+            <strong style="color:var(--text-primary)">Mid-frequency energy</strong>
+            represents textures, edges, and medium-scale patterns —
+            the features most informative for face recognition.
+          </p>
+          <p style="font-size:0.88rem;color:var(--text-secondary);line-height:1.7">
+            <strong style="color:var(--text-primary)">High-frequency energy</strong>
+            corresponds to fine detail, sharp edges, noise, and
+            compression artefacts — often where deepfake artefacts
+            are most visible in the spectrum.
+          </p>
+        </div>
+
+        <div style="margin-top:16px;padding:12px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid rgba(255,255,255,0.06)">
+          <p style="font-size:0.82rem;color:var(--text-secondary);line-height:1.6;margin:0">
+            <strong style="color:var(--text-primary)">Note:</strong>
+            The FFT analysis is an independent image statistic computed
+            from the pixel data. It does <em>not</em> contribute to the
+            CNN model's FAKE/REAL classification — it is shown for
+            educational and research comparison purposes.
+          </p>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ─── Disclaimer ──────────────────────────────────── -->
+    <div class="result-disclaimer">
+      <strong>⚠ Disclaimer:</strong>
+      Model confidence reflects the softmax score difference between
+      the two classes — it is <em>not</em> a calibrated probability
+      and does not represent measured accuracy.  The frequency ratios
+      are descriptive image statistics, not standalone proof of a
+      deepfake.  Use these results for research and educational
+      purposes only.
+    </div>
+
+  </div>
+</div>
+{% endblock %}

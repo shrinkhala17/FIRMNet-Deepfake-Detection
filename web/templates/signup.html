@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up — FIRMNet AI{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-header">
+      <h1>Create Account</h1>
+      <p>Join FIRMNet AI and start detecting deepfakes.</p>
+    </div>
+
+    <form id="signupForm" method="POST" action="{{ url_for('signup') }}" novalidate>
+
+      <div class="form-group">
+        <label class="form-label" for="full_name">Full Name</label>
+        <input class="form-input" type="text" id="full_name" name="full_name"
+               placeholder="Enter your full name" autocomplete="name" required
+               value="{{ form.get('full_name', '') }}">
+        <div class="form-error"></div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="username">Username</label>
+          <input class="form-input" type="text" id="username" name="username"
+                 placeholder="Choose a username" autocomplete="username" required
+                 value="{{ form.get('username', '') }}">
+          <div class="form-error"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address</label>
+          <input class="form-input" type="email" id="email" name="email"
+                 placeholder="you@example.com" autocomplete="email" required
+                 value="{{ form.get('email', '') }}">
+          <div class="form-error"></div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <div class="password-wrapper">
+            <input class="form-input" type="password" id="password" name="password"
+                   placeholder="Min. 8 characters" autocomplete="new-password" required>
+            <button type="button" class="password-toggle" aria-label="Show password">👁</button>
+          </div>
+          <div class="form-error"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="confirm_password">Confirm Password</label>
+          <div class="password-wrapper">
+            <input class="form-input" type="password" id="confirm_password" name="confirm_password"
+                   placeholder="Repeat password" autocomplete="new-password" required>
+            <button type="button" class="password-toggle" aria-label="Show password">👁</button>
+          </div>
+          <div class="form-error"></div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block" style="margin-top:8px">
+        Create Account
+      </button>
+
+      <div class="form-footer">
+        Already have an account? <a href="{{ url_for('login') }}">Log In</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

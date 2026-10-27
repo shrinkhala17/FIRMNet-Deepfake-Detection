@@ -2,9 +2,9 @@ import streamlit as st
 import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
+import os
 from PIL import Image, ImageOps
 from frequency_analysis import analyze_frequency
-from torchvision.models import mobilenet_v3_small, MobileNet_V3_Small_Weights
 
 st.set_page_config(page_title="Deepfake Detection Lab", page_icon="🔎", layout="wide")
 st.markdown("""
@@ -20,24 +20,102 @@ div[data-testid="stMetric"] {border:1px solid rgba(128,128,128,.22);border-radiu
 <h1>🔎 Deepfake Detection Lab</h1><div class="subtle">Compare a model's class scores with a separate frequency-domain visualisation.</div></div>
 """, unsafe_allow_html=True)
 
+# ---------------------------------------------------------------------------
+# Checkpoint discovery — support both FIRMNet and MobileNetV3 checkpoints.
+# Priority: FIRMNet checkpoint first (the project's main model), then
+# MobileNetV3 as fallback.  Never silently swap models.
+# ---------------------------------------------------------------------------
+FIRMNET_CHECKPOINTS = [
+    "checkpoints/firmnet_best.pth",
+    "checkpoints/epoch24.pth",
+    "checkpoints/epoch15.pth",
+]
+MOBILENET_CHECKPOINTS = [
+    "checkpoints/mobilenet_best.pth",
+    "checkpoints/mobilenet_deepfake.pth",
+]
+
+
+def _find_checkpoint():
+    """Return (path, model_type) or (None, None)."""
+    for path in FIRMNET_CHECKPOINTS:
+        if os.path.isfile(path):
+            return path, "firmnet"
+    for path in MOBILENET_CHECKPOINTS:
+        if os.path.isfile(path):
+            return path, "mobilenet"
+    return None, None
+
+
+CHECKPOINT_PATH, MODEL_TYPE = _find_checkpoint()
+
+# Sidebar —  reflects whichever model is actually loaded
 with st.sidebar:
     st.header("About this prototype")
-    st.write("**Classifier:** fine-tuned MobileNetV3-Small")
+    if MODEL_TYPE == "firmnet":
+        st.write("**Classifier:** FIRMNet (EfficientNetV2-S + FAGate + FER)")
+    elif MODEL_TYPE == "mobilenet":
+        st.write("**Classifier:** fine-tuned MobileNetV3-Small")
+    else:
+        st.write("**Classifier:** ⚠️ No checkpoint found")
     st.write("**Frequency view:** 2D Fast Fourier Transform (FFT)")
-    st.warning("**Validation accuracy: 52.5%** on a small 40-image validation set. This is close to chance for a balanced two-class task.")
-    st.caption("Softmax scores are not calibrated probabilities. This demo cannot verify authenticity.")
+    if CHECKPOINT_PATH is None:
+        st.error(
+            "No model checkpoint found in `checkpoints/`. "
+            "Train a model first with `main.py` or `train_mobilenet.py`."
+        )
+    st.caption(
+        "Softmax scores are not calibrated probabilities. "
+        "This demo cannot verify authenticity."
+    )
+
 
 @st.cache_resource
 def load_model():
-    device = torch.device("mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu")
-    weights = MobileNet_V3_Small_Weights.DEFAULT
-    model = mobilenet_v3_small(weights=None)
-    model.classifier[3] = torch.nn.Linear(model.classifier[3].in_features, 2)
-    state = torch.load("checkpoints/mobilenet_best.pth", map_location="cpu", weights_only=True)
-    model.load_state_dict(state)
-    model.to(device).eval()
-    return model, device, weights.transforms()
+    """Load the detected model checkpoint.  Raises RuntimeError on failure."""
+    if CHECKPOINT_PATH is None:
+        raise RuntimeError(
+            "No model checkpoint found in the checkpoints/ directory.\n\n"
+            "To train a model:\n"
+            "  FIRMNet:    python main.py --config config/config.yaml --data_dir data/images\n"
+            "  MobileNet:  python train_mobilenet.py\n"
+        )
 
+    device = torch.device(
+        "cuda" if torch.cuda.is_available() else "cpu"
+    )
+
+    if MODEL_TYPE == "firmnet":
+        from models.backbones import FIRMNet
+        from torchvision import transforms
+
+        model = FIRMNet(num_classes=2).to(device)
+        state = torch.load(CHECKPOINT_PATH, map_location="cpu", weights_only=True)
+        model.load_state_dict(state)
+        model.to(device).eval()
+
+        # FIRMNet was trained with ToTensor() only (no ImageNet normalisation)
+        preprocess = transforms.Compose([
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+        ])
+        return model, device, preprocess
+
+    else:  # mobilenet
+        from torchvision.models import mobilenet_v3_small, MobileNet_V3_Small_Weights
+
+        weights = MobileNet_V3_Small_Weights.DEFAULT
+        model = mobilenet_v3_small(weights=None)
+        model.classifier[3] = torch.nn.Linear(model.classifier[3].in_features, 2)
+        state = torch.load(CHECKPOINT_PATH, map_location="cpu", weights_only=True)
+        model.load_state_dict(state)
+        model.to(device).eval()
+        return model, device, weights.transforms()
+
+
+# ---------------------------------------------------------------------------
+# Upload and analysis UI — preserving the existing layout
+# ---------------------------------------------------------------------------
 left, right = st.columns([1.05, 1], gap="large")
 with left:
     st.subheader("1 · Upload an image")
@@ -68,11 +146,11 @@ if run_analysis and image is not None:
             fake_score, real_score = float(scores[0]), float(scores[1])
             predicted = "FAKE" if fake_score >= real_score else "REAL"
             score_gap = abs(fake_score - real_score)
-            fft_figure, high_frequency_ratio = analyze_frequency(image)
+            fft_figure, frequency_ratios = analyze_frequency(image)
 
         st.divider()
         st.subheader("Analysis report")
-        st.warning("Use this result only as a demonstration. The checkpoint scored 52.5% on 40 validation images, so it is not reliable evidence that an image is real or fake.")
+        st.warning("Use this result only as a demonstration. Model predictions are not reliable evidence that an image is real or fake.")
         a, b, c = st.columns(3)
         a.metric("Top model class", predicted)
         b.metric("Difference between scores", f"{score_gap:.1%}")
@@ -95,17 +173,33 @@ if run_analysis and image is not None:
         with fft_col:
             st.pyplot(fft_figure, use_container_width=True)
         with explanation_col:
-            st.metric("High-frequency energy ratio", f"{high_frequency_ratio:.2%}")
-            st.write("The FFT spectrum shows how image energy is distributed across spatial frequencies. The centre generally represents lower frequencies; areas farther from the centre represent higher frequencies.")
-            st.info("This ratio is descriptive only. Tests on this project's small dataset did not find reliable separation between REAL and FAKE images using frequency-band ratios, so it is not used to change the prediction.")
+            st.metric("Low-frequency energy", f"{frequency_ratios['low']:.2%}")
+            st.metric("Mid-frequency energy", f"{frequency_ratios['mid']:.2%}")
+            st.metric("High-frequency energy", f"{frequency_ratios['high']:.2%}")
+            st.write(
+                "The FFT spectrum shows how image energy is distributed across "
+                "spatial frequencies. The centre represents lower frequencies "
+                "(smooth regions); areas farther from the centre represent higher "
+                "frequencies (edges, textures, noise)."
+            )
+            st.info(
+                "These frequency ratios are descriptive image statistics, not "
+                "standalone proof of a deepfake. They are shown for educational "
+                "purposes and do not change the model's prediction."
+            )
         with st.expander("Model method and limitations"):
-            st.markdown("""
-- **Classifier:** fine-tuned MobileNetV3-Small.
+            model_name = (
+                "FIRMNet (EfficientNetV2-S + FAGate + FER)"
+                if MODEL_TYPE == "firmnet"
+                else "fine-tuned MobileNetV3-Small"
+            )
+            st.markdown(f"""
+- **Classifier:** {model_name}.
+- **Checkpoint:** `{CHECKPOINT_PATH}`
 - **Input:** a single image, resized and normalised with the model's standard preprocessing.
 - **Class mapping:** FAKE = 0, REAL = 1.
-- **Frequency analysis:** FFT spectrum and high-frequency energy ratio, shown separately.
-- **Validation:** 40 held-out images from a limited number of source videos.
-- **Limitation:** this validation result does not support reliable real-world detection claims.
+- **Frequency analysis:** FFT spectrum with low / mid / high energy ratios, shown separately.
+- **Limitation:** results depend on training data quality and quantity. This prototype cannot reliably verify authenticity.
 """)
     except Exception as error:
         st.error("Analysis could not be completed. Check that the model checkpoint and dependencies are available.")

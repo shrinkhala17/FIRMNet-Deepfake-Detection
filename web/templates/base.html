@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}FIRMNet AI — Deepfake Detection{% endblock %}</title>
+  <meta name="description" content="{% block description %}Robust deepfake detection using frequency-domain analysis and deep learning to enhance public safety.{% endblock %}">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <!-- ─── Header ──────────────────────────────────────────── -->
+  <header class="header">
+    <div class="container header-inner">
+      <a href="{{ url_for('index') }}" class="logo">
+        <span class="logo-icon">◆</span>
+        <span class="logo-text">FIRMNET <span class="logo-accent">AI</span></span>
+      </a>
+
+      <nav class="nav" id="mainNav">
+        <a href="{{ url_for('index') }}"
+           class="nav-link {{ 'active' if active_page == 'home' }}">Home</a>
+
+        {% if current_user %}
+          <a href="{{ url_for('dashboard') }}"
+             class="nav-link {{ 'active' if active_page == 'dashboard' }}">Dashboard</a>
+          <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+        {% else %}
+          <a href="{{ url_for('login') }}"
+             class="nav-link {{ 'active' if active_page == 'login' }}">Login</a>
+          <a href="{{ url_for('signup') }}"
+             class="nav-link btn-nav {{ 'active' if active_page == 'signup' }}">Sign Up</a>
+        {% endif %}
+      </nav>
+
+      <button class="mobile-toggle" id="mobileToggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ─── Main Content ────────────────────────────────────── -->
+  <main class="main">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="container">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">
+              {{ message }}
+              <button class="alert-close" onclick="this.parentElement.remove()" aria-label="Dismiss">&times;</button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- ─── Footer ──────────────────────────────────────────── -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <span class="logo-icon">◆</span>
+          <span class="logo-text">FIRMNET <span class="logo-accent">AI</span></span>
+        </div>
+        <p class="footer-text">
+          Enhancing public safety through robust deepfake detection
+          using frequency-domain analysis and deep learning.
+        </p>
+        <p class="footer-copy">&copy; {{ now }} FIRMNet AI &middot; Academic Research Project</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ─── Scripts ─────────────────────────────────────────── -->
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

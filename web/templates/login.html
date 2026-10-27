@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Login — FIRMNet AI{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-header">
+      <h1>Welcome Back</h1>
+      <p>Log in to access your detection dashboard.</p>
+    </div>
+
+    <form id="loginForm" method="POST" action="{{ url_for('login') }}" novalidate>
+      <div class="form-group">
+        <label class="form-label" for="login_id">Username or Email</label>
+        <input class="form-input" type="text" id="login_id" name="login_id"
+               placeholder="Enter your username or email" autocomplete="username" required>
+        <div class="form-error"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <div class="password-wrapper">
+          <input class="form-input" type="password" id="password" name="password"
+                 placeholder="Enter your password" autocomplete="current-password" required>
+          <button type="button" class="password-toggle" aria-label="Show password">👁</button>
+        </div>
+        <div class="form-error"></div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block" style="margin-top:8px">
+        Log In
+      </button>
+
+      <div class="form-footer">
+        Don't have an account? <a href="{{ url_for('signup') }}">Sign Up</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
